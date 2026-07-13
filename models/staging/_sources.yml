@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    tables:
+      - name: online_retail
+        config:
+          external_location: "read_csv('data/online_retail_II.csv', header = true, dateformat = '%m/%d/%Y %H:%M')"
+        description: "Raw invoice-level transaction data from Online Retail II (UCI), 2009-2011"
