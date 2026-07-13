@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: stg_online_retail
+    description: "Cleaned, standardized staging model for Online Retail II invoice-level transactions. One row per invoice line item."
+    columns:
+      - name: invoice_no
+        description: "Invoice number. Prefixed with 'C' if the transaction is a cancellation."
+        data_tests:
+          - not_null
+
+      - name: stock_code
+        description: "Product/item code."
+        data_tests:
+          - not_null
+
+      - name: quantity
+        description: "Units purchased. Negative values typically correspond to cancellations or returns."
+        data_tests:
+          - not_null
+
+      - name: unit_price
+        description: "Price per unit at time of transaction."
+        data_tests:
+          - not_null
+
+      - name: customer_id
+        description: "Customer identifier. Null indicates a guest/unidentified checkout."
+
+      - name: is_cancelled
+        description: "True if invoice_no starts with 'C', indicating a cancelled transaction."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+
+      - name: is_missing_customer
+        description: "True if customer_id was null in the source data."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+
+      - name: line_total
+        description: "Derived field: quantity multiplied by unit_price."
