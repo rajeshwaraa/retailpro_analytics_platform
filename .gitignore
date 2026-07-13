@@ -1,0 +1,14 @@
+# dbt
+target/
+dbt_packages/
+logs/
+*.duckdb
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
