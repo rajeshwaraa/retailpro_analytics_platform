@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: "Customer dimension. One row per distinct customer_id, plus one surrogate 'UNKNOWN' row for transactions with a missing customer_id. Country is intentionally excluded here — validated that some customers span multiple countries across invoices, so country is kept at the fact/transaction grain instead."
+    columns:
+      - name: customer_key
+        description: "Surrogate key. Hashed from customer_id, or the literal string 'UNKNOWN' for the default/missing-customer row."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: "Original customer ID from source data. Null only for the UNKNOWN row."
