@@ -24,3 +24,18 @@ models:
 
       - name: stock_code
         description: "Original stock/product code from source data. Null only for the UNKNOWN row."
+
+  - name: dim_date
+    description: "Calendar dimension spanning 2009-01-01 through 2026-12-31, generated via dbt_utils.date_spine. One row per calendar day."
+    columns:
+      - name: date_key
+        description: "Surrogate key hashed from date_day."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: date_day
+        description: "Calendar date."
+        data_tests:
+          - not_null
+          - unique
