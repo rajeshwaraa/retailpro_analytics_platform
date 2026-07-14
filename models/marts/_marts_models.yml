@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: dim_customer
-    description: "Customer dimension. One row per distinct customer_id, plus one surrogate 'UNKNOWN' row for transactions with a missing customer_id. Country is intentionally excluded here — validated that some customers span multiple countries across invoices, so country is kept at the fact/transaction grain instead."
+    description: "Customer dimension. One row per distinct customer_id, plus one surrogate 'UNKNOWN' row for transactions with a missing customer_id. Country is intentionally excluded here, validated that some customers span multiple countries across invoices, so country is kept at the fact/transaction grain instead."
     columns:
       - name: customer_key
         description: "Surrogate key. Hashed from customer_id, or the literal string 'UNKNOWN' for the default/missing-customer row."
@@ -39,3 +39,38 @@ models:
         data_tests:
           - not_null
           - unique
+
+  - name: fact_sales
+    description: "Sales fact table. One row per invoice line item, joined to customer, product, and date dimensions via surrogate keys. Includes both raw line_total and net_revenue, which zeroes out cancelled and zero-value transactions."
+    columns:
+      - name: customer_key
+        description: "Foreign key to dim_customer."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+
+      - name: product_key
+        description: "Foreign key to dim_product."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+
+      - name: date_key
+        description: "Foreign key to dim_date."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+      - name: net_revenue
+        description: "Revenue after excluding cancelled and zero-value transactions. Use this for 'true sales' reporting."
+        data_tests:
+          - not_null
