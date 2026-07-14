@@ -19,7 +19,7 @@ This isn't a tutorial walkthrough — it's a real transformation pipeline built 
 | **Data quality investigation** | Discovered and handled real issues: duplicate dimension keys, zero-value warehouse entries, multi-country customers |
 | **Documentation** | Auto-generated dbt docs site with full column-level descriptions and lineage graph |
 | **Git workflow** | Incremental, logically-scoped commits tracking the build from raw source to finished schema |
-| **BI integration & DAX** | Three-page Power BI dashboard with a full measure layer (CALCULATE, DISTINCTCOUNT, DIVIDE, MEDIANX) and a customer segmentation model built from scratch, not out-of-the-box aggregation |
+| **BI integration & DAX** | Three-page Power BI dashboard with a full measure layer (CALCULATE, DISTINCTCOUNT, DIVIDE) built from scratch, not out-of-the-box column aggregation |
 
 ---
 
@@ -62,7 +62,7 @@ KPI cards (net revenue, orders, average order value, unique customers, cancellat
 ![Executive Overview](docs/dashboard_executive_overview.png)
 
 ### Customer Analysis
-Top customers by net revenue, revenue distribution by country, and a **customer segmentation model** built on order frequency vs. average order value — customers are classified into four quadrants (Champions, Frequent/Low Value, Occasional/High Value, At Risk) relative to the *median* (not average) customer, chosen specifically because retail order data is right-skewed and a mean would be distorted by high-volume outliers.
+Top customers ranked by net revenue, revenue distribution by country, and order frequency vs. average order value plotted per customer to surface high-value and high-frequency buyers at a glance.
 
 ![Customer Analysis](docs/dashboard_customer_analysis.png)
 
@@ -82,20 +82,11 @@ DIVIDE(
     [Total Orders]
 )
 
-Customer Segment Column = 
-VAR OrderCount = [Customer Order Count]
-VAR AOV = [Average Order Value]
-VAR MedCount = [Median Order Count]
-VAR MedAOV = [Median AOV]
-RETURN
-    SWITCH(
-        TRUE(),
-        ISBLANK(OrderCount), "No Purchases",
-        OrderCount >= MedCount && AOV >= MedAOV, "Champions (High Freq, High Value)",
-        OrderCount >= MedCount && AOV < MedAOV, "Frequent, Low Value",
-        OrderCount < MedCount && AOV >= MedAOV, "Occasional, High Value",
-        "At Risk (Low Freq, Low Value)"
-    )
+Customer Order Count = 
+CALCULATE(
+    DISTINCTCOUNT(fact_sales[invoice_no]),
+    fact_sales[is_cancelled] = FALSE
+)
 ```
 
 ### Connecting Power BI to DuckDB
@@ -144,7 +135,7 @@ Investigating why one `stock_code` had 9 different descriptions revealed the cod
 - **dbt Core 1.11** — transformation, testing, documentation
 - **DuckDB** (via `dbt-duckdb` adapter) — local analytical database, reads CSV directly
 - **dbt_utils** — surrogate key generation, date spine
-- **Power BI** — three-page dashboard, custom DAX measure layer, customer segmentation
+- **Power BI** — three-page dashboard with a custom DAX measure layer
 - **Python (duckdb library)** — exports finished star schema to CSV for Power BI import
 - **Git / GitHub** — version control
 
@@ -206,4 +197,4 @@ Built as a hands-on portfolio project to develop and demonstrate Analytics Engin
 
 **Author:** Rajeshwaran R
 **Background:** Power BI / BI Analytics (11+ years) → Analytics Engineering
-**Connect:** [LinkedIn] · [GitHub](https://github.com/rajeshwaraa)
+**Connect:** [https://www.linkedin.com/in/rajeshwaran-analytics/] · [GitHub](https://github.com/rajeshwaraa)
