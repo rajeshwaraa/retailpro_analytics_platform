@@ -27,6 +27,11 @@ renamed as (
             else false
         end                                 as is_missing_customer,
 
+        case
+            when "Price" <= 0 then true
+            else false
+        end                                 as is_zero_value,
+        
         -- cleaned business metric
         round("Quantity" * "Price", 2)      as line_total
 

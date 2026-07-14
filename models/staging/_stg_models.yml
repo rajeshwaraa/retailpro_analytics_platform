@@ -43,5 +43,13 @@ models:
               arguments:
                 values: [true, false]
 
+      - name: is_zero_value
+        description: "True if unit_price is zero or negative, indicating a non-sale entry (e.g. warehouse adjustments, damages, samples) rather than a genuine transaction."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+
       - name: line_total
         description: "Derived field: quantity multiplied by unit_price."
