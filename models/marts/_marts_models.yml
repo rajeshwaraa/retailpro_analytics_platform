@@ -12,3 +12,15 @@ models:
 
       - name: customer_id
         description: "Original customer ID from source data. Null only for the UNKNOWN row."
+
+  - name: dim_product
+    description: "Product dimension. One row per distinct stock_code, using the most frequently occurring description as canonical. Rows with zero or negative unit_price (warehouse adjustments, damages, samples) are excluded before determining the canonical description."
+    columns:
+      - name: product_key
+        description: "Surrogate key. Hashed from stock_code, or the literal string 'UNKNOWN' for the default row."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: stock_code
+        description: "Original stock/product code from source data. Null only for the UNKNOWN row."
