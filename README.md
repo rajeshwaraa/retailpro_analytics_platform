@@ -19,7 +19,7 @@ This isn't a tutorial walkthrough — it's a real transformation pipeline built 
 | **Data quality investigation** | Discovered and handled real issues: duplicate dimension keys, zero-value warehouse entries, multi-country customers |
 | **Documentation** | Auto-generated dbt docs site with full column-level descriptions and lineage graph |
 | **Git workflow** | Incremental, logically-scoped commits tracking the build from raw source to finished schema |
-| **BI integration** | Power BI dashboard connected directly to the DuckDB semantic layer |
+| **BI integration & DAX** | Three-page Power BI dashboard with a full measure layer (CALCULATE, DISTINCTCOUNT, DIVIDE, MEDIANX) and a customer segmentation model built from scratch, not out-of-the-box aggregation |
 
 ---
 
@@ -49,6 +49,58 @@ CSV (Online Retail II, ~1.05M rows)
 ```
 
 **Why DuckDB, not Snowflake/Databricks/Fabric?** DuckDB was chosen deliberately for local development speed and zero infrastructure overhead — there's no cluster to provision or billing to manage, so the focus stays entirely on transformation logic and modeling decisions. The dbt modeling patterns used here (staging → dimensions → facts, testing, documentation) are directly transferable to any warehouse; only the connection profile would change. This project reflects hands-on dbt and DuckDB experience — not production experience with cloud warehouses, which is presented honestly rather than implied.
+
+---
+
+## Power BI Dashboard
+
+The star schema exported from DuckDB feeds a three-page Power BI dashboard, connected via CSV import (see [connection note](#connecting-power-bi-to-duckdb) below) with a full DAX measure layer built on top — not just raw column aggregation.
+
+### Executive Overview
+KPI cards (net revenue, orders, average order value, unique customers, cancellation rate), a monthly revenue trend line, a revenue-by-country map, and a gross-vs-net revenue comparison that visually surfaces the impact of cancelled and zero-value transactions.
+
+![Executive Overview](docs/dashboard_executive_overview.png)
+
+### Customer Analysis
+Top customers by net revenue, revenue distribution by country, and a **customer segmentation model** built on order frequency vs. average order value — customers are classified into four quadrants (Champions, Frequent/Low Value, Occasional/High Value, At Risk) relative to the *median* (not average) customer, chosen specifically because retail order data is right-skewed and a mean would be distorted by high-volume outliers.
+
+![Customer Analysis](docs/dashboard_customer_analysis.png)
+
+### Product Analysis
+Top products by revenue and by units sold — shown separately and deliberately, since the two rankings diverge (high-volume items are not always high-revenue items), plus total distinct products sold.
+
+![Product Analysis](docs/dashboard_product_analysis.png)
+
+### Key DAX measures
+
+```dax
+Total Net Revenue = SUM(fact_sales[net_revenue])
+
+Cancellation Rate = 
+DIVIDE(
+    CALCULATE(DISTINCTCOUNT(fact_sales[invoice_no]), fact_sales[is_cancelled] = TRUE),
+    [Total Orders]
+)
+
+Customer Segment Column = 
+VAR OrderCount = [Customer Order Count]
+VAR AOV = [Average Order Value]
+VAR MedCount = [Median Order Count]
+VAR MedAOV = [Median AOV]
+RETURN
+    SWITCH(
+        TRUE(),
+        ISBLANK(OrderCount), "No Purchases",
+        OrderCount >= MedCount && AOV >= MedAOV, "Champions (High Freq, High Value)",
+        OrderCount >= MedCount && AOV < MedAOV, "Frequent, Low Value",
+        OrderCount < MedCount && AOV >= MedAOV, "Occasional, High Value",
+        "At Risk (Low Freq, Low Value)"
+    )
+```
+
+### Connecting Power BI to DuckDB
+
+There is currently no first-party, friction-free Power BI connector for local DuckDB files — the available ODBC driver and community Power Query connector both carry known setup issues. Rather than fight driver instability for a one-time static build, the finished star schema tables (`dim_customer`, `dim_product`, `dim_date`, `fact_sales`) are exported to CSV via a small DuckDB Python script (`export_to_csv.py`) and imported into Power BI directly — a common, defensible pattern for scheduled or batch-refreshed BI layers.
 
 ---
 
@@ -92,7 +144,8 @@ Investigating why one `stock_code` had 9 different descriptions revealed the cod
 - **dbt Core 1.11** — transformation, testing, documentation
 - **DuckDB** (via `dbt-duckdb` adapter) — local analytical database, reads CSV directly
 - **dbt_utils** — surrogate key generation, date spine
-- **Power BI** — dashboard and reporting layer
+- **Power BI** — three-page dashboard, custom DAX measure layer, customer segmentation
+- **Python (duckdb library)** — exports finished star schema to CSV for Power BI import
 - **Git / GitHub** — version control
 
 ---
@@ -153,4 +206,4 @@ Built as a hands-on portfolio project to develop and demonstrate Analytics Engin
 
 **Author:** Rajeshwaran R
 **Background:** Power BI / BI Analytics (11+ years) → Analytics Engineering
-**Connect:** [https://www.linkedin.com/in/rajeshwaran-analytics/] · [GitHub](https://github.com/rajeshwaraa)
+**Connect:** [LinkedIn] · [GitHub](https://github.com/rajeshwaraa)
